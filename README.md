@@ -8,14 +8,14 @@ The system consists of two main workflows: **Data Ingestion** and **Query/Genera
 
 ```mermaid
 graph TD
-    subgraph Ingestion [Data Ingestion (load_data.py)]
+    subgraph Ingestion [Data Ingestion - load_data.py]
         A[PDF Document] -->|PyPDFLoader| B(Raw Text)
         B -->|RecursiveCharacterTextSplitter| C(Text Chunks)
         C -->|OllamaEmbeddings| D(Vector Embeddings)
         D -->|Store| E[(MongoDB Atlas\nVector Search)]
     end
 
-    subgraph Retrieval [Retrieval & Generation (generator.py)]
+    subgraph Retrieval [Retrieval and Generation - generator.py]
         F[User Query] -->|OllamaEmbeddings| G(Query Vector)
         G -->|Vector Search| E
         E -->|Return Top K| H(Relevant Context)
