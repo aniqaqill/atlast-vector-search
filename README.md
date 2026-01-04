@@ -24,9 +24,9 @@ graph TD
     end
 
     style E fill:#4db33d,stroke:#333,stroke-width:2px,color:white
-    style A fill:#ff9999,stroke:#333,stroke-width:2px
-    style F fill:#99ccff,stroke:#333,stroke-width:2px
-    style J fill:#ffdb58,stroke:#333,stroke-width:2px
+    style A fill:#ff9999,stroke:#333,stroke-width:2px,color:black
+    style F fill:#99ccff,stroke:#333,stroke-width:2px,color:black
+    style J fill:#ffdb58,stroke:#333,stroke-width:2px,color:black
 ```
 
 ## Prerequisites
