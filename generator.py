@@ -1,19 +1,53 @@
+import os
+import subprocess
+from dotenv import load_dotenv
+load_dotenv()
+
 from langchain_mongodb import MongoDBAtlasVectorSearch
-from langchain_openai import ChatOpenAI
-from langchain_voyageai import VoyageAIEmbeddings
-from langchain.prompts import PromptTemplate
+from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-import key_param
+
+def get_windows_host_ip() -> str:
+    """Automatically finds the Windows host IP from inside WSL."""
+    try:
+        # Grabs the gateway IP (your Windows side)
+        cmd = "ip route | grep default | awk '{print $3}'"
+        return subprocess.check_output(cmd, shell=True, timeout=5).decode('utf-8').strip()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+        return "127.0.0.1"  # Fallback
 
 dbName = "book_mongodb_chunks"
 collectionName = "chunked_data"
 index = "vector_index"
 
+# Ollama setup
+WINDOWS_HOST_IP = get_windows_host_ip()
+ollama_base_url = os.getenv("OLLAMA_BASE_URL", f"http://{WINDOWS_HOST_IP}:11434")
+
+# FIX: If the env var contains the literal placeholder string, replace it with the actual IP
+if "{WINDOWS_HOST_IP}" in ollama_base_url:
+    ollama_base_url = ollama_base_url.replace("{WINDOWS_HOST_IP}", WINDOWS_HOST_IP)
+
+# Model Configuration
+LANGUAGE_MODEL = os.getenv("LANGUAGE_MODEL", 'hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF')
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf')
+
+# SWAP CHECK: If the user accidentally swapped them in .env, we swap them back here to prevent errors.
+if "bge" in LANGUAGE_MODEL and "Llama" in EMBEDDING_MODEL:
+    print("WARNING: Models appear to be swapped in configuration. Swapping them back automatically.")
+    LANGUAGE_MODEL, EMBEDDING_MODEL = EMBEDDING_MODEL, LANGUAGE_MODEL
+
+
+print(f"Connecting to Ollama at {ollama_base_url}")
+print(f"Using Language Model: {LANGUAGE_MODEL}")
+print(f"Using Embedding Model: {EMBEDDING_MODEL}")
+
 vectorStore = MongoDBAtlasVectorSearch.from_connection_string(
-    key_param.MONGODB_URI,
+    os.getenv("MONGODB_URI"),
     dbName + "." + collectionName,
-    VoyageAIEmbeddings(voyage_api_key=key_param.VOYAGE_API_KEY, model="voyage-3.5-lite"),
+    OllamaEmbeddings(base_url=ollama_base_url, model=EMBEDDING_MODEL),
     index_name=index,
 )
 
@@ -41,11 +75,11 @@ def query_data(query):
     custom_rag_prompt = PromptTemplate.from_template(template)
 
     retrieve = {
-        "context": retriever | (lambda docs: "\n\n".join([d.page_content for d in docs])), 
+        "context": retriever | (lambda docs: print(f"DEBUG: Retrieved {len(docs)} docs") or "\n\n".join([d.page_content for d in docs])), 
         "question": RunnablePassthrough()
         }
 
-    llm = ChatOpenAI(openai_api_key=key_param.LLM_API_KEY, temperature=0)
+    llm = ChatOllama(base_url=ollama_base_url, model=LANGUAGE_MODEL, temperature=0)
 
     response_parser = StrOutputParser()
 
@@ -61,4 +95,4 @@ def query_data(query):
 
     return answer
 
-print(query_data("When did MongoDB begin supporting multi-document transactions?"))
+print(query_data("Who wrote the Little MongoDB book?"))

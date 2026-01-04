@@ -1,15 +1,15 @@
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_voyageai import VoyageAIEmbeddings
-import key_param
+import os
 
 dbName = "book_mongodb_chunks"
 collectionName = "chunked_data"
 index = "vector_index"
 
 vectorStore = MongoDBAtlasVectorSearch.from_connection_string(
-    key_param.MONGODB_URI,
+    os.getenv("MONGODB_URI"),
     dbName + "." + collectionName,
-    VoyageAIEmbeddings(voyage_api_key=key_param.VOYAGE_API_KEY, model="voyage-3.5-lite"),
+    VoyageAIEmbeddings(voyage_api_key=os.getenv("VOYAGE_API_KEY"), model="voyage-3.5-lite"),
     index_name=index,
 )
 
