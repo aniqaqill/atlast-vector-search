@@ -12,7 +12,7 @@ graph TD
         A[PDF Document] -->|PyPDFLoader| B(Raw Text)
         B -->|RecursiveCharacterTextSplitter| C(Text Chunks)
         C -->|OllamaEmbeddings| D(Vector Embeddings)
-        D -->|Store| E[(MongoDB Atlas\nVector Search)]
+        D -->|Store| E[(MongoDB Atlas Vector Search)]
     end
 
     subgraph Retrieval [Retrieval and Generation - generator.py]
